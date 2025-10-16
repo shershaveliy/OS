@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     
-    int file = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int file = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC, 0600);
     if (file == -1) {
         perror("open failed");
         exit(EXIT_FAILURE);

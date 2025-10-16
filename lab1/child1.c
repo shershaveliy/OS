@@ -21,8 +21,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: %s filename\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    
-    int file = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    // ПРИМЕЧАНИЕ: `O_WRONLY` открывает файл только для записи
+	// ПРИМЕЧАНИЕ: `O_CREAT` создает запрошенный файл, если он отсутствует
+	// ПРИМЕЧАНИЕ: `O_TRUNC` очищает файл перед открытием
+	// ПРИМЕЧАНИЕ: при использовании `O_APPEND` последующие записи добавляются, а не перезаписываются
+
+    int file = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC, 0600);
     if (file == -1) {
         perror("open failed");
         exit(EXIT_FAILURE);
