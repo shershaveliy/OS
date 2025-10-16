@@ -1,6 +1,11 @@
 # Prerequisites
 *.d
 
+# Файлы зоны Windows (метаданные безопасности)
+*.Zone.Identifier
+*:Zone.Identifier
+__ZoneIdentifier__*
+
 # Compiled Object files
 *.slo
 *.lo
