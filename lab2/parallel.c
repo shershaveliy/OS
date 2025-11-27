@@ -21,44 +21,50 @@ typedef struct {
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int active_threads = 0;
 
-double get_time() {
+//Функция для получения времени
+double get_time(){
     struct timeval tv;
-    gettimeofday(&tv, NULL);
+    gettimeofday(&tv, NULL);//Системный вызов для получения текущего времени
     return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
 // Последовательное слияние двух отсортированных массивов
-void merge(int *array, int left, int mid, int right) {
-    int n1 = mid - left + 1;
-    int n2 = right - mid;
+void merge(int *array, int left, int mid, int right){
+
+    int n1 = mid - left + 1;// Размер левого подмассива
+    int n2 = right - mid;// Правого
     
     int *left_arr = malloc(n1 * sizeof(int));
     int *right_arr = malloc(n2 * sizeof(int));
     
-    for (int i = 0; i < n1; i++)
+    for (int i = 0; i < n1; i++){
         left_arr[i] = array[left + i];
-    for (int j = 0; j < n2; j++)
+    }
+    for (int j = 0; j < n2; j++){
         right_arr[j] = array[mid + 1 + j];
+    }
     
     int i = 0, j = 0, k = left;
-    while (i < n1 && j < n2) {
-        if (left_arr[i] <= right_arr[j]) {
+    while (i < n1 && j < n2){
+        if (left_arr[i] <= right_arr[j]){
             array[k] = left_arr[i];
             i++;
-        } else {
+        }
+        else{
             array[k] = right_arr[j];
             j++;
         }
         k++;
     }
-    
-    while (i < n1) {
+    //Копируем оставшиеся элементы из левого массива, на случай
+    //если правый закончился раньше
+    while (i < n1){
         array[k] = left_arr[i];
         i++;
         k++;
     }
     
-    while (j < n2) {
+    while (j < n2){
         array[k] = right_arr[j];
         j++;
         k++;
@@ -81,7 +87,8 @@ void sequential_merge_sort(int *array, int left, int right) {
 }
 
 // Функция, выполняемая в потоке для сортировки
-static void *parallel_merge_sort_thread(void *_args) {
+static void *parallel_merge_sort_thread(void *_args){
+    //Явное преобразования типа
     SortArgs *args = (SortArgs *)_args;
     int *array = args->array;
     int left = args->left;
@@ -89,7 +96,11 @@ static void *parallel_merge_sort_thread(void *_args) {
     int depth = args->depth;
     int max_threads = args->max_threads;
     
-    if (left >= right || (right - left) < 1000) {
+    if (left >= right || (right - left) < 1000){
+        // условия выхода из рекурсии:
+        // 1. left >= right - массив пустой или из одного элемента
+        // 2. (right - left) < 1000 - массив достаточно маленький используем
+        // Последовательную сортировку
         sequential_merge_sort(array, left, right);
         free(args);
         return NULL;
@@ -112,28 +123,30 @@ static void *parallel_merge_sort_thread(void *_args) {
     right_args->depth = depth + 1;
     right_args->max_threads = max_threads;
     
-    pthread_t left_thread;
-    int left_created = 0;
+    pthread_t left_thread; // Идентификатор потока для левой половины
+    int left_created = 0; // Флаг создания потока (0/1)
     
     pthread_mutex_lock(&mutex);
-    if (active_threads < max_threads) {
+    if (active_threads < max_threads){
         active_threads++;
         left_created = 1;
     }
     pthread_mutex_unlock(&mutex);
     
-    if (left_created) {
+    if (left_created){
         pthread_create(&left_thread, NULL, parallel_merge_sort_thread, left_args);
-    } else {
+        //NULL - атрибуты потока по умолчанию
+    }
+    else{
+        //Лимит потоков исчерпан, вызываем рекурсию
         parallel_merge_sort_thread(left_args);
-        free(left_args);
     }
     
+    //Правая половина всегда обрабатывается в текущем потоке
     parallel_merge_sort_thread(right_args);
-    free(right_args);
     
-    if (left_created) {
-        pthread_join(left_thread, NULL);
+    if (left_created){
+        pthread_join(left_thread, NULL); // Ожидание потока
         pthread_mutex_lock(&mutex);
         active_threads--;
         pthread_mutex_unlock(&mutex);

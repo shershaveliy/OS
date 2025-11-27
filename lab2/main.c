@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "parallel.h"
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv){
     if (argc < 3) {
         printf("Использование: %s <размер_массива> <макс_потоков> [--print]\n", argv[0]);
         return 1;
@@ -14,21 +14,23 @@ int main(int argc, char **argv) {
     int max_threads = atoi(argv[2]);
     int print_array_flag = (argc > 3 && strcmp(argv[3], "--print") == 0);
     
-    if (size <= 0 || max_threads <= 0) {
+    if (size <= 0 || max_threads <= 0){
         printf("Ошибка: размер массива и количество потоков должны быть положительными\n");
         return 1;
     }
     
     int *array = malloc(size * sizeof(int));
-    int *array_seq = malloc(size * sizeof(int));
+    int *array_seq = malloc(size * sizeof(int)); // Для последовательной сортировки
+    int *array_test = malloc(size * sizeof(int)); // Копия для тестов
     
-    srand(time(NULL));
-    for (int i = 0; i < size; i++) {
+    srand(time(NULL)); // Инициализируем генератор случайных чисел
+    for (int i = 0; i < size; i++){
         array[i] = rand() % 1000;
         array_seq[i] = array[i];
+        array_test[i] = array[i];
     }
     
-    if (print_array_flag) {
+    if (print_array_flag){
         printf("Исходный массив: ");
         print_array(array, size);
     }
@@ -45,21 +47,23 @@ int main(int argc, char **argv) {
     sequential_merge_sort(array_seq, 0, size - 1);
     double sequential_time = get_time() - start_time;
     
-    if (!is_sorted(array, size)) {
+    if (!is_sorted(array, size)){
         printf("ОШИБКА: Массив не отсортирован после параллельной сортировки!\n");
         free(array);
         free(array_seq);
+        free(array_test);
         return 1;
     }
     
-    if (!is_sorted(array_seq, size)) {
+    if (!is_sorted(array_seq, size)){
         printf("ОШИБКА: Массив не отсортирован после последовательной сортировки!\n");
         free(array);
         free(array_seq);
+        free(array_test);
         return 1;
     }
     
-    if (print_array_flag) {
+    if (print_array_flag){
         printf("Отсортированный массив: ");
         print_array(array, size);
     }
@@ -78,7 +82,7 @@ int main(int argc, char **argv) {
     printf("------------------------------------------------\n");
     
     for (int threads = 1; threads <= max_threads; threads++) {
-        memcpy(array, array_seq, size * sizeof(int));
+        memcpy(array, array_test, size * sizeof(int));
         
         start_time = get_time();
         parallel_merge_sort(array, size, threads);
@@ -92,6 +96,7 @@ int main(int argc, char **argv) {
     
     free(array);
     free(array_seq);
+    free(array_test);
     
     return 0;
 }
